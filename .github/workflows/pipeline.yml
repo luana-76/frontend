@@ -17,14 +17,20 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v5
 
+      # Mudamos o "." para "./frontend" para ele escanear a pasta certa
       - name: Executar Análise SAST (njsscan)
         uses: ajinabraham/njsscan-action@master
         with:
-          args: "."
+          args: "./frontend"
 
   build:
     name: 1. Build
     runs-on: ubuntu-latest
+    
+    # Define que todos os passos deste job rodam dentro de /frontend
+    defaults:
+      run:
+        working-directory: ./frontend
 
     steps:
       - name: Checkout do código
@@ -35,6 +41,7 @@ jobs:
         with:
           node-version: "24"
           cache: npm
+          cache-dependency-path: ./frontend/package-lock.json # Aponta para o lockfile correto
 
       - name: Instalar dependências
         run: npm install
@@ -46,6 +53,11 @@ jobs:
     name: 2. Lint & Quality
     needs: build
     runs-on: ubuntu-latest
+    
+    # Define que todos os passos deste job rodam dentro de /frontend
+    defaults:
+      run:
+        working-directory: ./frontend
 
     steps:
       - name: Checkout do código
@@ -56,10 +68,13 @@ jobs:
         with:
           node-version: "24"
           cache: npm
+          cache-dependency-path: ./frontend/package-lock.json
 
       - name: Instalar dependências
         run: npm install
 
+      # Notei que na sua foto você usa Oxlint (.oxlintrc.json). 
+      # Se o seu script "npm run lint" já estiver configurado para o oxlint no package.json, vai funcionar perfeito!
       - name: Executar Linter (ESLint)
         run: npm run lint
 
@@ -67,6 +82,11 @@ jobs:
     name: 3. Test
     needs: build
     runs-on: ubuntu-latest
+    
+    # Define que todos os passos deste job rodam dentro de /frontend
+    defaults:
+      run:
+        working-directory: ./frontend
 
     steps:
       - name: Checkout do código
@@ -77,9 +97,12 @@ jobs:
         with:
           node-version: "24"
           cache: npm
+          cache-dependency-path: ./frontend/package-lock.json
 
       - name: Instalar dependências
         run: npm install
 
+      # Dica: Para pipelines, Garanta que o seu script de teste no package.json 
+      # não fique travado esperando alterações (em modo watch). O ideal para o vitest é "vitest run".
       - name: Executar Testes Unitários
         run: npm test
